@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pass Saison">
+<title>Pass Saisonnier 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --navy: #0B2F5E;
+  --blue: #1A5FB4;
+  --green: #1a7a4a;
+  --green-light: #eaf5ee;
+  --red: #b83232;
+  --red-light: #fdeaea;
+  --grey: #f4f6fa;
+  --border: #dde3ee;
+  --text: #1a2436;
+  --muted: #7a8aa0;
+  --white: #ffffff;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+}
+
+body {
+  font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--grey);
+  color: var(--text);
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* HEADER */
+.header {
+  background: linear-gradient(150deg, var(--navy) 0%, var(--blue) 100%);
+  color: white;
+  padding: calc(18px + var(--safe-top)) 20px 20px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 16px rgba(11,47,94,0.25);
+}
+.header-row {
+  max-width: 560px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.header-left { display: flex; align-items: center; gap: 13px; }
+.logo {
+  width: 46px; height: 46px;
+  background: rgba(255,255,255,0.13);
+  border-radius: 13px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.app-title { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+.app-sub   { font-size: 12px; opacity: 0.6; margin-top: 1px; }
+.count-box {
+  background: rgba(255,255,255,0.13);
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 14px;
+  padding: 7px 16px;
+  text-align: center;
+  display: none;
+}
+.count-box.visible { display: block; }
+.count-n  { font-size: 24px; font-weight: 800; line-height: 1; }
+.count-lbl{ font-size: 10px; opacity: 0.75; letter-spacing: 0.5px; text-transform: uppercase; margin-top: 2px; }
+
+/* MAIN */
+main {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 20px 16px calc(32px + var(--safe-bot));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* CARD */
+.card {
+  background: var(--white);
+  border-radius: 18px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 4px rgba(11,47,94,0.06), 0 4px 14px rgba(11,47,94,0.06);
+}
+.card-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* DROP ZONE */
+.drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 32px 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  transition: background 0.2s, border-color 0.2s;
+}
+.drop-zone.drag { background: #eaf2fd; border-color: var(--blue); }
+.drop-title { font-size: 15px; font-weight: 600; color: var(--text); }
+.drop-sub   { font-size: 13px; color: var(--muted); }
+
+.btn-import {
+  display: inline-block;
+  background: var(--blue);
+  color: white;
+  border: none;
+  border-radius: 11px;
+  padding: 12px 26px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+/* FILE LOADED */
+.file-loaded {
+  display: none;
+  align-items: center;
+  gap: 13px;
+}
+.file-loaded.visible { display: flex; }
+.file-ico {
+  width: 44px; height: 44px;
+  background: var(--green-light);
+  border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.file-info { flex: 1; min-width: 0; }
+.file-name { font-size: 14px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.btn-update {
+  display: inline-block;
+  background: var(--blue);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* SEARCH */
+.search-card { display: none; }
+.search-card.visible { display: block; }
+.search-row { display: flex; gap: 9px; align-items: center; }
+
+#inp {
+  flex: 1;
+  padding: 14px 16px;
+  font-size: 17px;
+  font-family: inherit;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  outline: none;
+  background: var(--grey);
+  color: var(--text);
+  letter-spacing: 0.4px;
+  -webkit-appearance: none;
+  transition: border-color 0.15s;
+}
+#inp:focus { border-color: var(--blue); background: white; }
+
+#btn-search {
+  padding: 14px 20px;
+  background: linear-gradient(135deg, var(--navy), var(--blue));
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-appearance: none;
+}
+#btn-clear {
+  width: 44px; height: 44px;
+  background: var(--border);
+  border: none;
+  border-radius: 11px;
+  font-size: 18px;
+  color: var(--muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  display: none;
+}
+.search-hint { font-size: 12px; color: var(--muted); margin-top: 9px; }
+
+/* RESULTS */
+#result { margin-top: 16px; display: none; }
+
+.res-ok {
+  background: var(--green-light);
+  border: 1.5px solid #a8d8b8;
+  border-radius: 14px;
+  padding: 16px;
+}
+.res-ok-head {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 14px; font-weight: 700; color: var(--green);
+  margin-bottom: 13px;
+}
+.res-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.res-tile {
+  background: white;
+  border-radius: 11px;
+  padding: 12px 14px;
+  border: 1px solid #c2dece;
+}
+.res-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #5a9070;
+  margin-bottom: 5px;
+}
+.res-val {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--text);
+  word-break: break-all;
+}
+.res-val.big { font-size: 26px; color: var(--navy); }
+
+.res-no {
+  background: var(--red-light);
+  border: 1.5px solid #e8b4b4;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.res-no h3 { font-size: 15px; font-weight: 700; color: var(--red); margin-bottom: 5px; }
+.res-no p  { font-size: 13px; color: #8b3a3a; line-height: 1.5; }
+
+/* INSTALL BANNER */
+.install-banner {
+  background: linear-gradient(135deg, var(--navy), var(--blue));
+  color: white;
+  border-radius: 16px;
+  padding: 18px;
+  display: none;
+  gap: 12px;
+}
+.install-banner.show { display: flex; }
+.install-content { flex: 1; }
+.install-content h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+.install-content p  { font-size: 12px; opacity: 0.85; line-height: 1.6; }
+.btn-close-banner {
+  background: rgba(255,255,255,0.15);
+  border: none; color: white;
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-family: inherit;
+}
+
+/* TOAST */
+#toast {
+  position: fixed;
+  bottom: calc(24px + var(--safe-bot));
+  left: 50%; transform: translateX(-50%) translateY(100px);
+  background: #1a2436;
+  color: white;
+  padding: 12px 22px;
+  border-radius: 100px;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
+  z-index: 999;
+  pointer-events: none;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+
+input[type="file"] { display: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-row">
+    <div class="header-left">
+      <div class="logo">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="5" r="3"/>
+          <line x1="12" y1="8" x2="12" y2="21"/>
+          <path d="M5 12H2a10 10 0 0 0 20 0h-3"/>
+        </svg>
+      </div>
+      <div>
+        <div class="app-title">Pass Saisonnier</div>
+        <div class="app-sub">Saison 2026</div>
+      </div>
+    </div>
+    <div class="count-box" id="count-box">
+      <div class="count-n"  id="count-n">0</div>
+      <div class="count-lbl">pass</div>
+    </div>
+  </div>
+</div>
+
+<main>
+
+  <!-- Bannière installation iOS -->
+  <div class="install-banner" id="install-banner">
+    <div class="install-content">
+      <h3>📲 Installer sur iPhone</h3>
+      <p>Appuyez sur <strong>⎙ Partager</strong> puis <strong>« Sur l'écran d'accueil »</strong> pour utiliser l'app sans Safari.</p>
+    </div>
+    <button class="btn-close-banner" onclick="closeBanner()">✕</button>
+  </div>
+
+  <!-- Carte base de données -->
+  <div class="card">
+    <div class="card-label">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+      Base de données
+    </div>
+
+    <!-- Zone de dépôt (pas de fichier) -->
+    <div class="drop-zone" id="drop-zone">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#4d9de0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      <div class="drop-title">Importer le fichier Excel</div>
+      <div class="drop-sub">Glissez le fichier ici ou cliquez</div>
+      <label class="btn-import">
+        Choisir le fichier
+        <input type="file" id="file-first" accept=".xlsx,.xls">
+      </label>
+    </div>
+
+    <!-- Fichier chargé -->
+    <div class="file-loaded" id="file-loaded">
+      <div class="file-ico">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a7a4a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+      </div>
+      <div class="file-info">
+        <div class="file-name" id="file-name">—</div>
+        <div class="file-meta" id="file-meta">—</div>
+      </div>
+      <label class="btn-update">
+        Mettre à jour
+        <input type="file" id="file-update" accept=".xlsx,.xls">
+      </label>
+    </div>
+  </div>
+
+  <!-- Carte recherche -->
+  <div class="card search-card" id="search-card">
+    <div class="card-label">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Recherche
+    </div>
+    <div class="search-row">
+      <input id="inp" type="text" placeholder="Plaque voiture ou bateau…"
+             autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
+      <button id="btn-search" onclick="search()">OK</button>
+      <button id="btn-clear"  onclick="clearSearch()">✕</button>
+    </div>
+    <div class="search-hint">Espaces et tirets ignorés · Entrée pour valider</div>
+    <div id="result"></div>
+  </div>
+
+</main>
+
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  ÉTAT
+// ═══════════════════════════════════════════════
+var RECORDS = [];   // [{nom, vignette, bateau, voiture, lieu}]
+var STORE_KEY = 'pss_records_v1';
+var META_KEY  = 'pss_meta_v1';
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+window.onload = function() {
+  loadFromStorage();
+  document.getElementById('file-first').onchange  = function(e){ if(e.target.files[0]) readFile(e.target.files[0]); e.target.value=''; };
+  document.getElementById('file-update').onchange = function(e){ if(e.target.files[0]) readFile(e.target.files[0]); e.target.value=''; };
+  document.getElementById('inp').onkeydown = function(e){ if(e.key==='Enter') search(); };
+  document.getElementById('inp').oninput   = function(){ hideResult(); toggleClear(); };
+  setupDrop();
+  showInstallBanner();
+};
+
+// ═══════════════════════════════════════════════
+//  NORMALISATION — supprime espaces, tirets, points
+// ═══════════════════════════════════════════════
+function norm(s) {
+  return String(s == null ? '' : s)
+    .toUpperCase()
+    .replace(/[\s\u00a0\-\.]/g, '');
+}
+
+// ═══════════════════════════════════════════════
+//  LECTURE EXCEL
+// ═══════════════════════════════════════════════
+function readFile(file) {
+  var reader = new FileReader();
+  reader.onerror = function() { toast('❌ Impossible de lire le fichier'); };
+  reader.onload = function(e) {
+    try {
+      var wb   = XLSX.read(e.target.result, { type: 'binary' });
+      var ws   = wb.Sheets[wb.SheetNames[0]];
+      // Lecture brute : tableau de tableaux
+      var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+      // 1. Trouver la ligne d'en-têtes (contient "VIGNETTE" et "BATEAU")
+      var headerIdx = -1;
+      for (var i = 0; i < rows.length; i++) {
+        var joined = rows[i].map(function(c){ return norm(String(c)); }).join('|');
+        if (joined.indexOf('VIGNETTE') !== -1 && joined.indexOf('BATEAU') !== -1) {
+          headerIdx = i;
+          break;
+        }
+      }
+      if (headerIdx === -1) { toast('❌ En-têtes introuvables'); return; }
+
+      var headers = rows[headerIdx];
+
+      // 2. Trouver les colonnes par leur contenu normalisé
+      function findCol(keyword) {
+        for (var j = 0; j < headers.length; j++) {
+          if (norm(String(headers[j])).indexOf(keyword) !== -1) return j;
+        }
+        return -1;
+      }
+
+      var cNom      = findCol('NOM');      // NOM
+      var cVig      = findCol('VIGNETTE'); // n° VIGNETTE
+      var cBat      = findCol('BATEAU');   // IMMATRICULATION BATEAU
+      var cVoi      = findCol('VOITURE');  // IMMATRICULATION VOITURE
+      var cLieu     = findCol('MISEAEAU'); // NOM MISE A L'EAU  (normalisé = MISEAEAU)
+      // si MISEAEAU pas trouvé, essai avec MISE
+      if (cLieu === -1) cLieu = findCol('MISE');
+
+      // 3. Parser chaque ligne de données
+      var recs = [];
+      for (var r = headerIdx + 1; r < rows.length; r++) {
+        var row = rows[r];
+        var nom = String(row[cNom] || '').trim();
+        if (!nom) continue;  // ligne vide → skip
+
+        var bat_raw = String(row[cBat] || '');
+        var voi_raw = String(row[cVoi] || '');
+
+        recs.push({
+          nom:      nom,
+          vignette: String(row[cVig] || '').trim(),
+          bateau:   norm(bat_raw),   // normalisé pour la recherche
+          voiture:  norm(voi_raw),   // normalisé pour la recherche
+          bat_orig: bat_raw.trim(),  // valeur originale à afficher
+          voi_orig: voi_raw.trim(),  // valeur originale à afficher
+          lieu:     String(row[cLieu] || '').trim(),
+        });
+      }
+
+      if (recs.length === 0) { toast('❌ Aucune donnée trouvée'); return; }
+
+      // 4. Sauvegarder + afficher
+      RECORDS = recs;
+      var meta = { name: file.name, date: new Date().toLocaleString('fr-FR'), count: recs.length };
+      try {
+        localStorage.setItem(STORE_KEY, JSON.stringify(recs));
+        localStorage.setItem(META_KEY,  JSON.stringify(meta));
+      } catch(ex) { /* quota dépassé, on continue sans persistance */ }
+
+      showLoaded(meta);
+      clearSearch();
+      toast('✅ ' + recs.length + ' pass chargés');
+
+    } catch(err) {
+      toast('❌ Erreur lecture : ' + err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+// ═══════════════════════════════════════════════
+//  STOCKAGE LOCAL
+// ═══════════════════════════════════════════════
+function loadFromStorage() {
+  try {
+    var raw  = localStorage.getItem(STORE_KEY);
+    var meta = localStorage.getItem(META_KEY);
+    if (raw && meta) {
+      RECORDS = JSON.parse(raw);
+      showLoaded(JSON.parse(meta));
+    }
+  } catch(e) { /* ignore */ }
+}
+
+// ═══════════════════════════════════════════════
+//  AFFICHAGE ÉTAT
+// ═══════════════════════════════════════════════
+function showLoaded(meta) {
+  document.getElementById('drop-zone').style.display    = 'none';
+  document.getElementById('file-loaded').className      = 'file-loaded visible';
+  document.getElementById('search-card').className      = 'card search-card visible';
+  document.getElementById('count-box').className        = 'count-box visible';
+  document.getElementById('count-n').textContent        = meta.count || RECORDS.length;
+  document.getElementById('file-name').textContent      = meta.name;
+  document.getElementById('file-meta').textContent      = (meta.count || RECORDS.length) + ' pass · ' + meta.date;
+}
+
+// ═══════════════════════════════════════════════
+//  RECHERCHE
+// ═══════════════════════════════════════════════
+function search() {
+  var raw = document.getElementById('inp').value;
+  var q   = norm(raw);
+
+  if (!q) return;
+  if (RECORDS.length === 0) { toast('⚠️ Importez d\'abord un fichier Excel'); return; }
+
+  var found = null;
+  for (var i = 0; i < RECORDS.length; i++) {
+    if (RECORDS[i].bateau === q || RECORDS[i].voiture === q) {
+      found = RECORDS[i];
+      break;
+    }
+  }
+
+  var box = document.getElementById('result');
+  box.style.display = 'block';
+
+  if (found) {
+    var tiles = '';
+
+    // Vignette
+    tiles += '<div class="res-tile"><div class="res-lbl">N° Vignette</div><div class="res-val big">' + esc(found.vignette) + '</div></div>';
+    // Nom
+    tiles += '<div class="res-tile"><div class="res-lbl">Titulaire</div><div class="res-val">' + esc(found.nom) + '</div></div>';
+    // Lieu (si présent)
+    if (found.lieu) {
+      tiles += '<div class="res-tile"><div class="res-lbl">Mise à l\'eau</div><div class="res-val">' + esc(found.lieu) + '</div></div>';
+    }
+    // Immat bateau (si présente)
+    if (found.bat_orig) {
+      tiles += '<div class="res-tile"><div class="res-lbl">Immat. bateau</div><div class="res-val">' + esc(found.bat_orig) + '</div></div>';
+    }
+
+    box.innerHTML =
+      '<div class="res-ok">' +
+        '<div class="res-ok-head">' +
+          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a7a4a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' +
+          'Pass valide' +
+        '</div>' +
+        '<div class="res-grid">' + tiles + '</div>' +
+      '</div>';
+  } else {
+    box.innerHTML =
+      '<div class="res-no">' +
+        '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#b83232" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>' +
+        '<div><h3>Aucun pass trouvé</h3><p>La plaque <strong>«&nbsp;' + esc(raw.trim()) + '&nbsp;»</strong> n\'est associée à aucun pass enregistré.</p></div>' +
+      '</div>';
+  }
+}
+
+function clearSearch() {
+  document.getElementById('inp').value = '';
+  hideResult();
+  document.getElementById('btn-clear').style.display = 'none';
+}
+function hideResult() {
+  var r = document.getElementById('result');
+  r.style.display = 'none';
+  r.innerHTML = '';
+}
+function toggleClear() {
+  document.getElementById('btn-clear').style.display =
+    document.getElementById('inp').value ? 'block' : 'none';
+}
+
+// ═══════════════════════════════════════════════
+//  DRAG & DROP
+// ═══════════════════════════════════════════════
+function setupDrop() {
+  var zone = document.getElementById('drop-zone');
+  zone.addEventListener('dragover', function(e){ e.preventDefault(); zone.classList.add('drag'); });
+  zone.addEventListener('dragleave', function(){ zone.classList.remove('drag'); });
+  zone.addEventListener('drop', function(e){
+    e.preventDefault(); zone.classList.remove('drag');
+    var f = e.dataTransfer.files[0];
+    if (f) readFile(f);
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  BANNIÈRE INSTALLATION iOS
+// ═══════════════════════════════════════════════
+function showInstallBanner() {
+  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  var isStandalone = window.navigator.standalone;
+  var closed = localStorage.getItem('banner_closed');
+  if (isIOS && !isStandalone && !closed) {
+    document.getElementById('install-banner').className = 'install-banner show';
+  }
+}
+function closeBanner() {
+  localStorage.setItem('banner_closed', '1');
+  document.getElementById('install-banner').className = 'install-banner';
+}
+
+// ═══════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════
+var _toastT;
+function toast(msg) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show';
+  clearTimeout(_toastT);
+  _toastT = setTimeout(function(){ el.className = ''; }, 3000);
+}
+
+// ═══════════════════════════════════════════════
+//  UTILITAIRE
+// ═══════════════════════════════════════════════
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
